@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ガソリン代">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e1013" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>ガソリン代メーター</title>
+</head>
+<body>
+  <header class="topbar">
+    <h1>ガソリン代メーター</h1>
+    <span id="carLabel" class="car-label"></span>
+  </header>
+
+  <div id="installBanner" class="banner" hidden>
+    <div>
+      <strong>ホーム画面に追加するとアプリとして使えます</strong>
+      <p>Safari の共有ボタン <span class="share-icon" aria-hidden="true">⬆︎</span> →「ホーム画面に追加」。通知はホーム画面から開いたときだけ使えます。</p>
+    </div>
+    <button id="bannerClose" class="icon-btn" aria-label="閉じる">×</button>
+  </div>
+
+  <main>
+    <!-- 走行 -->
+    <section id="view-drive" class="view active" aria-label="走行">
+      <div class="card meter">
+        <div class="meter-head">
+          <span id="meterState" class="state-pill">待機中</span>
+          <span id="gpsStatus" class="gps"></span>
+        </div>
+        <div class="meter-cost" aria-live="polite">
+          <span class="yen">¥</span><span id="liveCost">0</span>
+        </div>
+        <div class="meter-sub">今回のガソリン代（見込み）</div>
+        <div class="stats">
+          <div class="stat"><span class="stat-label">距離</span><span><span id="liveKm" class="stat-val">0.00</span><span class="stat-unit">km</span></span></div>
+          <div class="stat"><span class="stat-label">消費</span><span><span id="liveL" class="stat-val">0.00</span><span class="stat-unit">L</span></span></div>
+          <div class="stat"><span class="stat-label">経過</span><span><span id="liveTime" class="stat-val">0:00</span></span></div>
+          <div class="stat"><span class="stat-label">速度</span><span><span id="liveSpeed" class="stat-val">—</span><span class="stat-unit">km/h</span></span></div>
+        </div>
+        <div class="quick">
+          <div class="quick-item">
+            <span class="stat-label">ガソリン単価</span>
+            <div class="stepper">
+              <button class="step" type="button" data-key="pricePerL" data-step="-1" aria-label="単価を1円下げる">−</button>
+              <input id="qPrice" class="step-input" type="number" inputmode="decimal" min="1" step="1" aria-label="ガソリン単価（円/L）">
+              <button class="step" type="button" data-key="pricePerL" data-step="1" aria-label="単価を1円上げる">＋</button>
+            </div>
+            <span class="quick-unit">円/L</span>
+          </div>
+          <div class="quick-item">
+            <span class="stat-label">燃費</span>
+            <div class="stepper">
+              <button class="step" type="button" data-key="kmPerL" data-step="-0.1" aria-label="燃費を0.1下げる">−</button>
+              <input id="qKmPerL" class="step-input" type="number" inputmode="decimal" min="0.1" step="0.1" aria-label="燃費（km/L）">
+              <button class="step" type="button" data-key="kmPerL" data-step="0.1" aria-label="燃費を0.1上げる">＋</button>
+            </div>
+            <span class="quick-unit">km/L</span>
+          </div>
+        </div>
+        <div class="price-check">
+          <span id="priceUpdated" class="price-updated"></span>
+          <a id="gogoLink" class="gogo-link" href="https://gogo.gs/map" target="_blank" rel="noopener">gogo.gsで価格を見る<span aria-hidden="true"> ↗</span></a>
+        </div>
+      </div>
+
+      <button id="tripBtn" class="trip-btn" type="button">出発</button>
+      <p id="tripHint" class="hint center"></p>
+      <button id="resumeBtn" class="btn btn-sub" type="button" hidden>自動スタートを再開</button>
+
+      <div id="notifPrompt" class="card notif-prompt" hidden>
+        <div>
+          <h2>到着したら通知する</h2>
+          <p class="hint">自動で到着になったときに、ガソリン代を通知でお知らせします</p>
+        </div>
+        <button id="notifPromptBtn" class="btn" type="button">許可</button>
+      </div>
+
+      <div class="card">
+        <h2>距離を入力して記録</h2>
+        <p class="hint">トリップメーターの数字などから記録できます</p>
+        <form id="manualForm" class="row">
+          <div class="input-unit">
+            <input id="manualKm" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例: 12.5" aria-label="走行距離">
+            <span>km</span>
+          </div>
+          <button class="btn" type="submit">記録</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 履歴 -->
+    <section id="view-history" class="view" aria-label="履歴">
+      <div class="card summary">
+        <h2 id="summaryTitle">今月</h2>
+        <div class="summary-grid">
+          <div><span class="stat-label">ガソリン代</span><span id="sumCost" class="sum-val">¥0</span></div>
+          <div><span class="stat-label">消費</span><span id="sumL" class="sum-val">0.00 L</span></div>
+          <div><span class="stat-label">距離</span><span id="sumKm" class="sum-val">0.0 km</span></div>
+          <div><span class="stat-label">回数</span><span id="sumCount" class="sum-val">0 回</span></div>
+        </div>
+      </div>
+      <ul id="historyList" class="history"></ul>
+      <p id="historyEmpty" class="empty">まだ記録がありません</p>
+    </section>
+
+    <!-- 設定 -->
+    <section id="view-settings" class="view" aria-label="設定">
+      <div class="card form">
+        <label class="field">
+          <span class="field-label">車の名前（任意）</span>
+          <input id="setCar" type="text" placeholder="例: プリウス" autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="field-label">燃費</span>
+          <span class="input-unit"><input id="setKmPerL" type="number" inputmode="decimal" min="0.1" step="0.1"><span>km/L</span></span>
+          <small>実燃費がわからなければ、カタログ燃費（WLTC）の8割くらいが目安です</small>
+        </label>
+        <label class="field">
+          <span class="field-label">ガソリン単価</span>
+          <span class="input-unit"><input id="setPrice" type="number" inputmode="decimal" min="1" step="1"><span>円/L</span></span>
+          <small>走行画面の −／＋ でも変えられます</small>
+        </label>
+        <label class="field">
+          <span class="field-label">単価の確認先（gogo.gs）</span>
+          <select id="setPriceArea">
+            <option value="">現在地の周辺（地図）</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">いつものスタンドのページ（任意）</span>
+          <input id="setPriceUrl" type="url" inputmode="url" placeholder="https://gogo.gs/shop/…" autocomplete="off">
+          <small>gogo.gsでスタンドのページを開き、アドレスをコピーして貼り付けると、そのページを直接開きます</small>
+        </label>
+        <label class="field">
+          <span class="field-label">自動スタート</span>
+          <select id="setAutoStart">
+            <option value="1">走り出したら自動で計測を始める</option>
+            <option value="0">「出発」を押して始める</option>
+          </select>
+          <small>アプリを開いている間、約20km/h以上で動き出したら開始します。開始時刻と距離は動き出した地点までさかのぼって数えます</small>
+        </label>
+        <label class="field">
+          <span class="field-label">自動で到着にする</span>
+          <select id="setAutoStop">
+            <option value="0">しない</option>
+            <option value="3">3分止まったら</option>
+            <option value="5">5分止まったら</option>
+            <option value="10">10分止まったら</option>
+            <option value="15">15分止まったら</option>
+          </select>
+          <small>車の速さで動かない時間がこれだけ続くと、最後に動いていた時刻で到着として記録・通知します。降りてから歩いた分は含めません</small>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2>通知</h2>
+        <p id="notifStatus" class="hint"></p>
+        <button id="notifBtn" class="btn" type="button" hidden>通知を許可する</button>
+      </div>
+
+      <div class="card">
+        <h2>データ</h2>
+        <p class="hint">記録はこのiPhoneの中だけに保存されます</p>
+        <button id="clearBtn" class="btn btn-danger" type="button">履歴をすべて削除</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="メニュー">
+    <button class="tab active" data-view="drive" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 6.6 7.6A2 2 0 0 1 8.5 6.2h7a2 2 0 0 1 1.9 1.4L19 12.5"/><rect x="3" y="12.5" width="18" height="5" rx="1.5"/><path d="M6 17.5v2M18 17.5v2"/><circle cx="7.5" cy="15" r=".6"/><circle cx="16.5" cy="15" r=".6"/></svg>
+      <span>走行</span>
+    </button>
+    <button class="tab" data-view="history" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>履歴</span>
+    </button>
+    <button class="tab" data-view="settings" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      <span>設定</span>
+    </button>
+  </nav>
+
+  <dialog id="resultDialog" class="result">
+    <p class="result-title" id="resultTitle">おつかれさまでした</p>
+    <div class="meter-cost small"><span class="yen">¥</span><span id="resultCost">0</span></div>
+    <div class="result-grid">
+      <div><span class="stat-label">消費したガソリン</span><span id="resultL" class="sum-val"></span></div>
+      <div><span class="stat-label">走行距離</span><span id="resultKm" class="sum-val"></span></div>
+      <div><span class="stat-label">時間</span><span id="resultTime" class="sum-val"></span></div>
+      <div><span class="stat-label">計算条件</span><span id="resultBasis" class="sum-val"></span></div>
+    </div>
+    <form method="dialog"><button class="btn btn-wide" type="submit">OK</button></form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
