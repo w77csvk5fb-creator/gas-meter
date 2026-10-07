@@ -24,29 +24,26 @@
   <div id="installBanner" class="banner" hidden>
     <div>
       <strong>ホーム画面に追加するとアプリとして使えます</strong>
-      <p>Safari の共有ボタン <span class="share-icon" aria-hidden="true">⬆︎</span> →「ホーム画面に追加」。通知はホーム画面から開いたときだけ使えます。</p>
+      <p>Safari の共有ボタン <span class="share-icon" aria-hidden="true">⬆︎</span> →「ホーム画面に追加」</p>
     </div>
     <button id="bannerClose" class="icon-btn" aria-label="閉じる">×</button>
   </div>
 
   <main>
-    <!-- 走行 -->
-    <section id="view-drive" class="view active" aria-label="走行">
-      <div class="card meter">
-        <div class="meter-head">
-          <button id="meterState" class="state-pill" type="button"><span id="meterStateText">停止中</span><span class="mini-switch" aria-hidden="true"></span></button>
-          <span id="gpsStatus" class="gps"></span>
-        </div>
+    <!-- 計算 -->
+    <section id="view-calc" class="view active" aria-label="計算">
+      <form id="calcForm" class="card calc" autocomplete="off">
+        <label class="dist-field">
+          <span class="field-label">走行距離</span>
+          <span class="dist-input">
+            <input id="distKm" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0.0" aria-label="走行距離（km）">
+            <span>km</span>
+          </span>
+        </label>
         <div class="meter-cost" aria-live="polite">
           <span class="yen">¥</span><span id="liveCost">0</span>
         </div>
-        <div class="meter-sub">今回のガソリン代（見込み）</div>
-        <div class="stats">
-          <div class="stat"><span class="stat-label">距離</span><span><span id="liveKm" class="stat-val">0.00</span><span class="stat-unit">km</span></span></div>
-          <div class="stat"><span class="stat-label">消費</span><span><span id="liveL" class="stat-val">0.00</span><span class="stat-unit">L</span></span></div>
-          <div class="stat"><span class="stat-label">経過</span><span><span id="liveTime" class="stat-val">0:00</span></span></div>
-          <div class="stat"><span class="stat-label">速度</span><span><span id="liveSpeed" class="stat-val">—</span><span class="stat-unit">km/h</span></span></div>
-        </div>
+        <div class="meter-sub">消費するガソリン <span id="liveL">0.00</span> L</div>
         <div class="quick">
           <div class="quick-item">
             <span class="stat-label">ガソリン単価</span>
@@ -71,31 +68,10 @@
           <span id="priceUpdated" class="price-updated"></span>
           <a id="gogoLink" class="gogo-link" href="https://gogo.gs/map" target="_blank" rel="noopener">gogo.gsで価格を見る<span aria-hidden="true"> ↗</span></a>
         </div>
-      </div>
+      </form>
 
-      <button id="tripBtn" class="trip-btn" type="button">出発</button>
-      <p id="tripHint" class="hint center"></p>
-      <button id="resumeBtn" class="btn btn-sub" type="button" hidden>自動スタートを再開</button>
-
-      <div id="notifPrompt" class="card notif-prompt" hidden>
-        <div>
-          <h2>到着したら通知する</h2>
-          <p class="hint">自動で到着になったときに、ガソリン代を通知でお知らせします</p>
-        </div>
-        <button id="notifPromptBtn" class="btn" type="button">許可</button>
-      </div>
-
-      <div class="card">
-        <h2>距離を入力して記録</h2>
-        <p class="hint">トリップメーターの数字などから記録できます</p>
-        <form id="manualForm" class="row">
-          <div class="input-unit">
-            <input id="manualKm" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例: 12.5" aria-label="走行距離">
-            <span>km</span>
-          </div>
-          <button class="btn" type="submit">記録</button>
-        </form>
-      </div>
+      <button id="recordBtn" class="record-btn" type="submit" form="calcForm" disabled>記録する</button>
+      <p class="hint center">トリップメーターの数字などを入れて「記録する」を押すと、履歴に残ります</p>
     </section>
 
     <!-- 履歴 -->
@@ -128,7 +104,7 @@
         <label class="field">
           <span class="field-label">ガソリン単価</span>
           <span class="input-unit"><input id="setPrice" type="number" inputmode="decimal" min="1" step="1"><span>円/L</span></span>
-          <small>走行画面の −／＋ でも変えられます</small>
+          <small>計算画面の −／＋ でも変えられます</small>
         </label>
         <label class="field">
           <span class="field-label">単価の確認先（gogo.gs）</span>
@@ -141,31 +117,6 @@
           <input id="setPriceUrl" type="url" inputmode="url" placeholder="https://gogo.gs/shop/…" autocomplete="off">
           <small>gogo.gsでスタンドのページを開き、アドレスをコピーして貼り付けると、そのページを直接開きます</small>
         </label>
-        <label class="field">
-          <span class="field-label">自動スタート</span>
-          <select id="setAutoStart">
-            <option value="1">走り出したら自動で計測を始める</option>
-            <option value="0">「出発」を押して始める</option>
-          </select>
-          <small>アプリを開いている間、約20km/h以上で動き出したら開始します。開始時刻と距離は動き出した地点までさかのぼって数えます</small>
-        </label>
-        <label class="field">
-          <span class="field-label">自動で到着にする</span>
-          <select id="setAutoStop">
-            <option value="0">しない</option>
-            <option value="3">3分止まったら</option>
-            <option value="5">5分止まったら</option>
-            <option value="10">10分止まったら</option>
-            <option value="15">15分止まったら</option>
-          </select>
-          <small>車の速さで動かない時間がこれだけ続くと、最後に動いていた時刻で到着として記録・通知します。降りてから歩いた分は含めません</small>
-        </label>
-      </div>
-
-      <div class="card">
-        <h2>通知</h2>
-        <p id="notifStatus" class="hint"></p>
-        <button id="notifBtn" class="btn" type="button" hidden>通知を許可する</button>
       </div>
 
       <div class="card">
@@ -177,9 +128,9 @@
   </main>
 
   <nav class="tabbar" aria-label="メニュー">
-    <button class="tab active" data-view="drive" type="button">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 6.6 7.6A2 2 0 0 1 8.5 6.2h7a2 2 0 0 1 1.9 1.4L19 12.5"/><rect x="3" y="12.5" width="18" height="5" rx="1.5"/><path d="M6 17.5v2M18 17.5v2"/><circle cx="7.5" cy="15" r=".6"/><circle cx="16.5" cy="15" r=".6"/></svg>
-      <span>走行</span>
+    <button class="tab active" data-view="calc" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/></svg>
+      <span>計算</span>
     </button>
     <button class="tab" data-view="history" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
@@ -190,18 +141,6 @@
       <span>設定</span>
     </button>
   </nav>
-
-  <dialog id="resultDialog" class="result">
-    <p class="result-title" id="resultTitle">おつかれさまでした</p>
-    <div class="meter-cost small"><span class="yen">¥</span><span id="resultCost">0</span></div>
-    <div class="result-grid">
-      <div><span class="stat-label">消費したガソリン</span><span id="resultL" class="sum-val"></span></div>
-      <div><span class="stat-label">走行距離</span><span id="resultKm" class="sum-val"></span></div>
-      <div><span class="stat-label">時間</span><span id="resultTime" class="sum-val"></span></div>
-      <div><span class="stat-label">計算条件</span><span id="resultBasis" class="sum-val"></span></div>
-    </div>
-    <form method="dialog"><button class="btn btn-wide" type="submit">OK</button></form>
-  </dialog>
 
   <div id="toast" class="toast" role="status" hidden></div>
 

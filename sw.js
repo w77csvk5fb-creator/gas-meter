@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにアプリ本体をキャッシュする。
 // ファイルを更新したら CACHE の番号を上げること。
-const CACHE = 'gas-meter-v5';
+const CACHE = 'gas-meter-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -38,19 +38,6 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cached);
       return cached || network;
-    })
-  );
-});
-
-// 通知をタップしたらアプリを前面に出す
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if ('focus' in client) return client.focus();
-      }
-      return self.clients.openWindow('./#history');
     })
   );
 });
