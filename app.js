@@ -401,7 +401,19 @@ function renderDrive() {
   const km = trip ? trip.distanceM / 1000 : 0;
   const { liters, cost } = calcFuel(km);
 
-  $('#meterState').textContent = { driving: '走行中', standby: '自動スタート待機中', idle: '停止中' }[mode];
+  // 状態バッジ：走行中以外はタップで自動スタートのオン／オフを切り替えられる
+  const pill = $('#meterState');
+  let label;
+  if (mode === 'driving') label = '走行中';
+  else if (mode === 'standby') label = '自動スタート待機中';
+  else if (!settings.autoStart) label = '自動スタート オフ';
+  else if (geoDenied) label = '自動スタート 使用不可';
+  else label = '自動スタート 休止中';
+  $('#meterStateText').textContent = label;
+  pill.disabled = mode === 'driving';
+  pill.dataset.on = String(settings.autoStart);
+  pill.setAttribute('aria-pressed', String(settings.autoStart));
+  pill.setAttribute('aria-label', mode === 'driving' ? '走行中' : `${label}（タップで自動スタートを${settings.autoStart ? 'オフ' : 'オン'}）`);
   $('#liveCost').textContent = fmtYenNum(cost);
   $('#liveKm').textContent = fmtKm(km);
   $('#liveL').textContent = fmtL(liters);
@@ -429,6 +441,8 @@ function renderDrive() {
     hint = '位置情報が許可されていないため自動スタートできません。';
   } else if (standbyPaused) {
     hint = '30分動きがなかったので、電池節約のため自動スタートを休んでいます。';
+  } else if (!settings.autoStart) {
+    hint = '出発するときに押してください。左上のバッジをタップすると自動スタートをオンにできます。';
   } else {
     hint = '出発するときに押してください。';
   }
@@ -666,11 +680,21 @@ $('#setPriceUrl').addEventListener('change', (e) => {
   saveSettings();
   renderPriceCheck();
 });
-$('#setAutoStart').addEventListener('change', (e) => {
-  settings.autoStart = e.target.value === '1';
+function setAutoStart(on) {
+  settings.autoStart = on;
   saveSettings();
-  if (settings.autoStart) startStandby();
+  $('#setAutoStart').value = on ? '1' : '0';
+  if (on) startStandby();
   else stopStandby();
+  renderDrive();
+}
+$('#setAutoStart').addEventListener('change', (e) => setAutoStart(e.target.value === '1'));
+$('#meterState').addEventListener('click', () => {
+  if (trip) return;
+  const on = !settings.autoStart;
+  setAutoStart(on);
+  if (on && geoDenied) toast('位置情報が許可されていないため、自動スタートは使えません');
+  else toast(on ? '自動スタートをオンにしました' : '自動スタートをオフにしました');
 });
 $('#setAutoStop').addEventListener('change', (e) => {
   settings.autoStopMin = Number(e.target.value);

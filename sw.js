@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにアプリ本体をキャッシュする。
 // ファイルを更新したら CACHE の番号を上げること。
-const CACHE = 'gas-meter-v4';
+const CACHE = 'gas-meter-v5';
 const ASSETS = [
   './',
   './index.html',
